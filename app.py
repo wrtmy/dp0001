@@ -118,7 +118,6 @@ HTML_TEMPLATE = '''
         .upload-text { color: #333; font-weight: 500; }
         .upload-hint { color: #888; font-size: 13px; margin-top: 4px; }
         
-        /* ===== 需求1：文件框固定大小 + 滚动 ===== */
         #file-list-wrapper {
             margin-top: 16px;
             max-height: 120px;
@@ -221,7 +220,6 @@ HTML_TEMPLATE = '''
         .status-success { color: #22c55e; font-weight: 500; }
         .status-error { color: #ef4444; font-weight: 500; }
         
-        /* ===== 需求2：下载按钮在解析按钮下方 ===== */
         .action-bar {
             display: flex;
             gap: 12px;
@@ -235,6 +233,23 @@ HTML_TEMPLATE = '''
             display: none;
         }
         #downloadSection.show {
+            display: block;
+        }
+
+        /* ===== 新增：进度显示样式 ===== */
+        #parseProgress {
+            display: none;
+            text-align: center;
+            padding: 12px 16px;
+            background: #f0f2ff;
+            border-radius: 8px;
+            margin-top: 12px;
+            color: #6c63ff;
+            font-weight: 600;
+            font-size: 16px;
+            border: 1px solid #d0c8ff;
+        }
+        #parseProgress.show {
             display: block;
         }
     </style>
@@ -251,16 +266,19 @@ HTML_TEMPLATE = '''
             <input type="file" id="fileInput" accept=".pdf" multiple>
         </div>
         
-        <!-- 文件列表固定区域 -->
         <div id="file-list-wrapper">
             <div id="file-list"></div>
         </div>
         <div class="file-count" id="fileCount">已选择 0 个文件</div>
         
-        <!-- ===== 按钮组：解析 + 下载（并排） ===== -->
         <div class="action-bar">
             <button class="btn" id="parseBtn" disabled>🚀 开始批量解析</button>
             <button class="btn btn-success" id="downloadBtn" disabled>📥 下载 Excel</button>
+        </div>
+
+        <!-- ===== 新增：进度显示区域 ===== -->
+        <div id="parseProgress">
+            ⏳ 解析进度：<span id="progressCount">0</span> / <span id="totalCount">0</span>
         </div>
         
         <div class="loading" id="loading">⏳ 正在批量解析，请稍候...</div>
@@ -297,6 +315,10 @@ HTML_TEMPLATE = '''
         const errorDiv = document.getElementById('error');
         const resultsContainer = document.getElementById('resultsContainer');
         const resultsBody = document.getElementById('resultsBody');
+        // ===== 新增：进度元素 =====
+        const parseProgress = document.getElementById('parseProgress');
+        const progressCount = document.getElementById('progressCount');
+        const totalCount = document.getElementById('totalCount');
         
         let selectedFiles = [];
         let latestResults = [];
@@ -375,7 +397,6 @@ HTML_TEMPLATE = '''
             }
         });
         
-        // 解析按钮
         parseBtn.addEventListener('click', async () => {
             if (selectedFiles.length === 0) return;
             
@@ -387,10 +408,20 @@ HTML_TEMPLATE = '''
             resultsBody.innerHTML = '';
             latestResults = [];
             
+            // ===== 新增：显示进度，初始化数字 =====
+            const total = selectedFiles.length;
+            totalCount.textContent = total;
+            progressCount.textContent = '0';
+            parseProgress.classList.add('show');
+            
             const results = [];
             
-            for (let i = 0; i < selectedFiles.length; i++) {
+            for (let i = 0; i < total; i++) {
                 const file = selectedFiles[i];
+                
+                // ===== 新增：更新进度数字 =====
+                progressCount.textContent = i + 1;
+                
                 const formData = new FormData();
                 formData.append('file', file);
                 
@@ -412,6 +443,9 @@ HTML_TEMPLATE = '''
             }
             
             latestResults = results;
+            
+            // ===== 新增：隐藏进度 =====
+            parseProgress.classList.remove('show');
             
             loadingDiv.classList.remove('show');
             parseBtn.disabled = false;
@@ -439,7 +473,6 @@ HTML_TEMPLATE = '''
             resultsContainer.scrollIntoView({ behavior: 'smooth' });
         });
         
-        // 下载按钮
         downloadBtn.addEventListener('click', () => {
             if (latestResults.length === 0) return;
             
